@@ -1,17 +1,16 @@
+#pragma once
+#include <atomic>
+
 #include <aws/core/Aws.h>
 #include <aws/dynamodb/DynamoDBClient.h>
 #include <aws/dynamodb/model/CreateTableRequest.h>
 #include <aws/dynamodb/model/DeleteTableRequest.h>
+#include <aws/dynamodb/model/GetItemRequest.h>
 #include <aws/dynamodb/model/PutItemRequest.h>
 
-using namespace Aws::DynamoDB::Model;
+#define CLIENT client[id % num_clients]
 
-static constexpr uint16_t num_threads = 1;
-static constexpr uint32_t num_connection = 512;
-static constexpr uint32_t coro_per_thd = num_connection / num_threads;
-static constexpr uint16_t run_seconds = 30;
-static constexpr uint16_t pool_size = 64;
-static constexpr uint16_t num_clients = 2;
+using namespace Aws::DynamoDB::Model;
 
 namespace dynamo {
 static constexpr char const *region = "ap-northeast-1";
@@ -20,54 +19,36 @@ static constexpr char const *table_name = "test.rand";
 static constexpr uint32_t table_size = 1000;
 } // namespace dynamo
 
-std::string gen_random(const int len) {
-  static const char alphanum[] = "0123456789"
-                                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                 "abcdefghijklmnopqrstuvwxyz";
-  std::string tmp_s;
-  tmp_s.reserve(len);
+static constexpr uint16_t run_seconds = 3;
 
-  for (int i = 0; i < len; ++i) {
-    tmp_s += alphanum[rand() % (sizeof(alphanum) - 1)];
+// static constexpr uint16_t num_threads = 2;
+// static constexpr uint16_t num_clients = 2;
+// static constexpr uint16_t pool_size = 32;
+
+static constexpr uint16_t num_threads = 1;
+static constexpr uint16_t num_clients = 1;
+static constexpr uint16_t pool_size = 0;
+
+static std::atomic<bool> killed = false;
+static std::atomic<uint32_t> counter = 0;
+static std::unique_ptr<Aws::DynamoDB::DynamoDBClient> client[num_clients];
+
+std::string random_string(const int len);
+
+void prepare(Aws::DynamoDB::DynamoDBClient *client);
+
+void cleanup(Aws::DynamoDB::DynamoDBClient *client);
+
+template <typename F> void run_test(F worker) {
+  std::vector<std::thread> threads;
+  for (uint16_t id = 0; id < num_threads; ++id) {
+    threads.emplace_back(worker, id, CLIENT.get());
   }
-
-  return tmp_s;
-}
-
-void prepare(Aws::DynamoDB::DynamoDBClient *client) {
-  CreateTableRequest crt_req;
-  crt_req.SetTableName(dynamo::table_name);
-  crt_req.SetBillingMode(BillingMode::PAY_PER_REQUEST);
-  crt_req.AddAttributeDefinitions(
-      AttributeDefinition().WithAttributeName("id").WithAttributeType(
-          ScalarAttributeType::N));
-  crt_req.AddKeySchema(
-      KeySchemaElement().WithAttributeName("id").WithKeyType(KeyType::HASH));
-  CreateTableOutcome outcome = client->CreateTable(crt_req);
-  if (!outcome.IsSuccess()) {
-    std::cout << outcome.GetError() << std::endl;
-    assert(false);
+  std::this_thread::sleep_for(std::chrono::seconds(run_seconds));
+  killed = true;
+  for (uint16_t id = 0; id < num_threads; ++id) {
+    threads[id].join();
   }
-
-  for (uint32_t key = 0; key < dynamo::table_size; ++key) {
-    PutItemRequest req;
-    req.SetTableName(dynamo::table_name);
-    req.AddItem("id", AttributeValue().SetN(std::to_string(key)));
-    req.AddItem("c1", AttributeValue().SetS(gen_random(24)));
-    req.AddItem("c2", AttributeValue().SetS(gen_random(100)));
-    PutItemOutcome outcome = client->PutItem(req);
-    if (!outcome.IsSuccess()) {
-      std::cout << outcome.GetError() << std::endl;
-      assert(false);
-    }
-  }
-}
-
-void cleanup(Aws::DynamoDB::DynamoDBClient *client) {
-  DeleteTableRequest req;
-  req.SetTableName(dynamo::table_name);
-  DeleteTableOutcome outcome = client->DeleteTable(req);
-  if (!outcome.IsSuccess()) {
-    std::cout << outcome.GetError() << std::endl;
-  }
+  uint32_t qps = counter / run_seconds;
+  std::cout << "QPS: " << qps << std::endl;
 }
