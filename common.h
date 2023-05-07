@@ -8,8 +8,6 @@
 #include <aws/dynamodb/model/GetItemRequest.h>
 #include <aws/dynamodb/model/PutItemRequest.h>
 
-#define CLIENT client[id % num_clients]
-
 using namespace Aws::DynamoDB::Model;
 
 namespace dynamo {
@@ -42,7 +40,7 @@ void cleanup(Aws::DynamoDB::DynamoDBClient *client);
 template <typename F> void run_test(F worker) {
   std::vector<std::thread> threads;
   for (uint16_t id = 0; id < num_threads; ++id) {
-    threads.emplace_back(worker, id, CLIENT.get());
+    threads.emplace_back(worker, id, client[id % num_clients].get());
   }
   std::this_thread::sleep_for(std::chrono::seconds(run_seconds));
   killed = true;
