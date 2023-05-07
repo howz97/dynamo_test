@@ -8,7 +8,9 @@ int main(int argc, char *argv[]) {
   for (uint16_t i = 0; i < num_clients; ++i) {
     Aws::Client::ClientConfiguration config;
     config.region = dynamo::region;
-    config.endpointOverride = dynamo::endpoint;
+    if (std::strlen(dynamo::endpoint)) {
+      config.endpointOverride = dynamo::endpoint;
+    }
     if (pool_size) {
       config.executor =
           Aws::MakeShared<Aws::Utils::Threading::PooledThreadExecutor>(

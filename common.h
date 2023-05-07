@@ -17,14 +17,14 @@ static constexpr char const *table_name = "test.rand";
 static constexpr uint32_t table_size = 1000;
 } // namespace dynamo
 
-static constexpr uint16_t run_seconds = 3;
+static constexpr uint16_t run_seconds = 30;
 
 // static constexpr uint16_t num_threads = 2;
 // static constexpr uint16_t num_clients = 2;
 // static constexpr uint16_t pool_size = 32;
 
-static constexpr uint16_t num_threads = 1;
-static constexpr uint16_t num_clients = 1;
+static constexpr uint16_t num_threads = 256;
+static constexpr uint16_t num_clients = 256;
 static constexpr uint16_t pool_size = 0;
 
 inline std::atomic<bool> killed = false;
