@@ -16,6 +16,7 @@ static constexpr char const *region = "ap-northeast-1";
 static constexpr char const *endpoint = "http://127.0.0.1:8050";
 static constexpr char const *table_name = "test.rand";
 static constexpr uint32_t table_size = 1000;
+static constexpr bool is_stong_consistency = false;
 } // namespace dynamo
 
 static constexpr uint16_t run_seconds = 30;
@@ -38,6 +39,8 @@ std::string random_string(const int len);
 void prepare(Aws::DynamoDB::DynamoDBClient *client);
 
 void cleanup(Aws::DynamoDB::DynamoDBClient *client);
+
+GetItemRequest rand_get_item_req();
 
 template <typename F> void run_test(F worker) {
   std::vector<std::thread> threads;

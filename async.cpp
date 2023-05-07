@@ -30,10 +30,7 @@ void async_worker(uint16_t id, Aws::DynamoDB::DynamoDBClient *client) {
     inflight[id]++;
     mu[id].unlock();
 
-    Aws::DynamoDB::Model::GetItemRequest req;
-    req.SetTableName(dynamo::table_name);
-    req.AddKey("id", AttributeValue().SetN(
-                         std::to_string(rand() % dynamo::table_size)));
+    GetItemRequest req = rand_get_item_req();
     client->GetItemAsync(req, callback, ctx);
     assert(inflight[id] <= coro_per_thd);
     // check without mutex lock

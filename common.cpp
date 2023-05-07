@@ -70,3 +70,12 @@ void cleanup(Aws::DynamoDB::DynamoDBClient *client) {
     std::cout << outcome.GetError() << std::endl;
   }
 }
+
+GetItemRequest rand_get_item_req() {
+  GetItemRequest req;
+  req.SetTableName(dynamo::table_name);
+  req.SetConsistentRead(dynamo::is_stong_consistency);
+  req.AddKey(
+      "id", AttributeValue().SetN(std::to_string(rand() % dynamo::table_size)));
+  return std::move(req);
+}
