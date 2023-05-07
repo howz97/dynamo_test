@@ -29,9 +29,9 @@ static constexpr uint16_t num_threads = 1;
 static constexpr uint16_t num_clients = 1;
 static constexpr uint16_t pool_size = 0;
 
-static std::atomic<bool> killed = false;
-static std::atomic<uint32_t> counter = 0;
-static std::unique_ptr<Aws::DynamoDB::DynamoDBClient> client[num_clients];
+inline std::atomic<bool> killed = false;
+inline std::atomic<uint32_t> counter = 0;
+inline std::unique_ptr<Aws::DynamoDB::DynamoDBClient> client[num_clients];
 
 std::string random_string(const int len);
 
