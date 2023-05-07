@@ -33,6 +33,7 @@ void prepare(Aws::DynamoDB::DynamoDBClient *client) {
   DescribeTableRequest desc_req;
   desc_req.SetTableName(dynamo::table_name);
   while (true) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     DescribeTableOutcome outcome = client->DescribeTable(desc_req);
     if (!outcome.IsSuccess()) {
       std::cout << "DescribeTable: " << outcome.GetError().GetExceptionName()
@@ -44,7 +45,6 @@ void prepare(Aws::DynamoDB::DynamoDBClient *client) {
       std::cout << "DescribeTable: creating..." << std::endl;
       continue;
     }
-    std::this_thread::sleep_for(std::chrono::seconds(1));
     break;
   }
   // fill data
