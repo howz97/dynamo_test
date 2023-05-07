@@ -18,6 +18,7 @@ static constexpr uint32_t table_size = 1000;
 } // namespace dynamo
 
 static constexpr uint16_t run_seconds = 30;
+static constexpr uint16_t report_interval = 5;
 
 // static constexpr uint16_t num_threads = 2;
 // static constexpr uint16_t num_clients = 2;
@@ -42,11 +43,19 @@ template <typename F> void run_test(F worker) {
   for (uint16_t id = 0; id < num_threads; ++id) {
     threads.emplace_back(worker, id, client[id % num_clients].get());
   }
-  std::this_thread::sleep_for(std::chrono::seconds(run_seconds));
+  uint32_t last_v = 0;
+  uint16_t rep_times = run_seconds / report_interval;
+  // rep_times = rep_times ? rep_times : 1;
+  for (; rep_times; --rep_times) {
+    std::this_thread::sleep_for(std::chrono::seconds(report_interval));
+    uint32_t cur_v = counter;
+    std::cout << "QPS: " << (cur_v - last_v) / report_interval << std::endl;
+    last_v = cur_v;
+  }
   killed = true;
   for (uint16_t id = 0; id < num_threads; ++id) {
     threads[id].join();
   }
   uint32_t qps = counter / run_seconds;
-  std::cout << "QPS: " << qps << std::endl;
+  std::cout << "Average QPS: " << qps << std::endl;
 }
