@@ -9,6 +9,7 @@ using namespace Aws::DynamoDB::Model;
 
 constexpr uint num_threads = 100;
 std::atomic<uint> counter = 0;
+std::unique_ptr<Aws::DynamoDB::DynamoDBClient> client;
 
 GetItemRequest get_rand_item_req() {
   GetItemRequest req;
@@ -19,12 +20,9 @@ GetItemRequest get_rand_item_req() {
 }
 
 void worker() {
-  Aws::Client::ClientConfiguration config;
-  config.region = "ap-northeast-1";
-  Aws::DynamoDB::DynamoDBClient client(config);
   for (uint i = 0; i < 5; ++i) {
     GetItemRequest req = get_rand_item_req();
-    GetItemOutcome outcome = client.GetItem(req);
+    GetItemOutcome outcome = client->GetItem(req);
     if (!outcome.IsSuccess()) {
       std::cout << outcome.GetError() << std::endl;
       break;
@@ -36,6 +34,9 @@ void worker() {
 int main() {
   Aws::SDKOptions options;
   Aws::InitAPI(options);
+  Aws::Client::ClientConfiguration config;
+  config.region = "ap-northeast-1";
+  client = std::make_unique<Aws::DynamoDB::DynamoDBClient>(config);
 
   auto start = std::chrono::system_clock::now();
   std::vector<std::thread> workers;
@@ -51,6 +52,7 @@ int main() {
   std::cout << "finished counter " << counter << std::endl;
   std::cout << "elapsed seconds " << elapsed << std::endl;
 
+  client = nullptr;
   Aws::ShutdownAPI(options);
   return 0;
 }
