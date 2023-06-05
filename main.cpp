@@ -36,6 +36,7 @@ int main() {
   Aws::InitAPI(options);
   Aws::Client::ClientConfiguration config;
   config.region = "ap-northeast-1";
+  config.enableEndpointDiscovery = false;
   client = std::make_unique<Aws::DynamoDB::DynamoDBClient>(config);
 
   auto start = std::chrono::system_clock::now();
